@@ -1,0 +1,34 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ingestion_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=DevPassword!123
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - ingestion-network
+  api:
+    build:
+      context: ./src/IngestionEngine.Api
+      dockerfile: Dockerfile
+    container_name: ingestion_api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=IngestionDb;User Id=sa;Password=DevPassword!123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - ingestion-network
+
+volumes:
+  mssql_data:
+
+networks:
+  ingestion-network:
+    driver: bridge
